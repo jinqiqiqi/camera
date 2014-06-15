@@ -1,0 +1,114 @@
+
+
+
+    <div class="row">
+      <label for="fileToUpload">Select Files to Upload</label><br />
+      <input type="file" name="filesToUpload[]" id="filesToUpload" multiple="multiple" accept="image/*" capture="camera"  /> <!-- capture="camera"  -->
+      <output id="filesInfo"></output>
+      <div id="status"></div>
+      <div id="msg"></div>
+    </div>
+    <div class="row">
+      <input type="button" value="Upload" onclick="submitUpload();" />
+    </div>
+
+
+<script type="text/javascript">
+
+function fileSelect(evt) {
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+        var files = evt.target.files;
+ 
+        var result = '';
+        var file;
+        for (var i = 0; file = files[i]; i++) {
+            // if the file is not an image, continue
+            if (!file.type.match('image.*')) {
+                continue;
+            }
+            
+            resizeImage(file);
+ 
+        }
+    } else {
+        alert('The File APIs are not fully supported in this browser.');
+    }
+}
+
+function resizeImage (file) {
+	var reader = new FileReader();
+    reader.onloadend = function() {
+ 
+		var tempImg = new Image();
+		tempImg.src = reader.result;
+		tempImg.onload = function() {
+
+			var MAX_WIDTH = 100;
+			var MAX_HEIGHT = 100;
+			var tempW = tempImg.width;
+			var tempH = tempImg.height;
+			if (tempW > tempH) {
+				if (tempW > MAX_WIDTH) {
+					tempH *= MAX_WIDTH / tempW;
+					tempW = MAX_WIDTH;
+				}
+			} else {
+				if (tempH > MAX_HEIGHT) {
+					tempW *= MAX_HEIGHT / tempH;
+					tempH = MAX_HEIGHT;
+				}
+			}
+
+
+			var canvas = document.createElement('canvas');
+			canvas.width = tempW;
+			canvas.height = tempH;
+			var ctx = canvas.getContext("2d");
+			ctx.drawImage(this, 0, 0, tempW, tempH);
+			var dataURL = canvas.toDataURL("image/png");
+			canvas.setAttribute("url", dataURL);
+
+			document.getElementById("filesInfo").appendChild(canvas);
+
+			
+		}
+ 
+   }
+   reader.readAsDataURL(file);
+}
+
+
+document.getElementById('filesToUpload').addEventListener('change', fileSelect, false);
+
+
+function uploadFile(file_data) {
+	var xhr = new XMLHttpRequest();
+	xhr.onreadystatechange = function(ev){
+		if(xhr.readyState == 4 && xhr.status == 200) {
+
+			document.getElementById("status").innerHTML += xhr.responseText + "<br />";
+			document.getElementById("msg").innerHTML = "Finished.";
+
+		}
+	};
+
+	xhr.open('POST', 'upload.php', true);
+	xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	var data = 'image=' + file_data;
+	document.getElementById("msg").innerHTML = "Running....";
+	xhr.send(data);
+}
+
+
+function submitUpload() {
+	var all_canvas = document.getElementsByTagName("canvas");
+	// console.log(all_canvas);
+	for(i=0; i<all_canvas.length; i++) {
+		var img = all_canvas[i];
+		var img_url = img.getAttribute("url");
+
+		uploadFile(img_url);
+	}
+}
+
+</script>
